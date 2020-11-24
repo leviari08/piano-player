@@ -1,0 +1,7 @@
+# visual studio specific files
+.vs/
+*.sln
+
+# c# files
+bin/
+obj/
