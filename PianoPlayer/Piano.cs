@@ -32,6 +32,7 @@ namespace PianoPlayer
         /// </summary>
         
         private Process _pianoProcess;
+        public bool isConnected { get; set; } = false;
 
         public Piano()
         {
@@ -43,8 +44,10 @@ namespace PianoPlayer
                     _pianoProcess = i;
             }
 
-            string msg = _pianoProcess is null ? "Not connected" : "Connected";
-            System.Windows.Forms.MessageBox.Show(msg);
+            if (_pianoProcess != null) {
+                isConnected = true;
+                System.Windows.Forms.MessageBox.Show("Connected");
+            }
         }
 
         public Piano(string roomID)
@@ -59,73 +62,122 @@ namespace PianoPlayer
 
         public void PlayNotes(params (Key, int)[] data)
         {
-            //var notes = data.ToList().OrderBy(x => x.Item2).ToArray();
+            int lowest = data.Min(x => x.Item2);
+            int highest = data.Max(x => x.Item2);
 
-            var notes1 = data.ToList().Where(x => x.Item2 == -1).ToArray();
-            var notes2 = data.ToList().Where(x => x.Item2 == 0).ToArray();
-            var notes3 = data.ToList().Where(x => x.Item2 == 1).ToArray();
+            var notesByOctave = new List<(Key, int)[]>();
 
-
-            // -1
-
-            SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)Key.ARROW_DOWN, IntPtr.Zero);
-            SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)Key.ARROW_DOWN, IntPtr.Zero);
-
-            foreach (var n in notes1)
+            for (int i = lowest; i <= highest; i++)
             {
-                SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)n.Item1, IntPtr.Zero);
+                var notes = data.ToList().Where(x => x.Item2 == i).ToArray();
+
+                notesByOctave.Add(notes);
             }
 
+            for (int i = 0; i > lowest; i--)
+            {
+                SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)Key.ARROW_DOWN, IntPtr.Zero);
+                SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)Key.ARROW_DOWN, IntPtr.Zero);
+            }
             Thread.Sleep(1);
 
-            foreach (var n in notes1)
+            for (int j = 0; j < highest - lowest + 1; j++)
             {
-                SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)n.Item1, IntPtr.Zero);
+                foreach (var n in notesByOctave[j])
+                {
+                    SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)n.Item1, IntPtr.Zero);
+                }
+
+                Thread.Sleep(1);
+
+                foreach (var n in notesByOctave[j])
+                {
+                    SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)n.Item1, IntPtr.Zero);
+                }
+
+                SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)Key.ARROW_UP, IntPtr.Zero);
+                SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)Key.ARROW_UP, IntPtr.Zero);
+
+                Thread.Sleep(1);
             }
 
-            SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)Key.ARROW_UP, IntPtr.Zero);
-            SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)Key.ARROW_UP, IntPtr.Zero);
-
+            for (int i = highest; i >= 0; i--)
+            {
+                SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)Key.ARROW_DOWN, IntPtr.Zero);
+                SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)Key.ARROW_DOWN, IntPtr.Zero);
+            }
             Thread.Sleep(1);
-
-
-            // 0
-
-            foreach (var n in notes2)
-            {
-                SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)n.Item1, IntPtr.Zero);
-            }
-
-            Thread.Sleep(1);
-
-            foreach (var n in notes2)
-            {
-                SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)n.Item1, IntPtr.Zero);
-            }
-
-            Thread.Sleep(1);
-
-
-            // 1
-
-            SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)Key.ARROW_UP, IntPtr.Zero);
-            SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)Key.ARROW_UP, IntPtr.Zero);
-
-            foreach (var n in notes3)
-            {
-                SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)n.Item1, IntPtr.Zero);
-            }
-
-            Thread.Sleep(1);
-
-            foreach (var n in notes3)
-            {
-                SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)n.Item1, IntPtr.Zero);
-            }
-
-            SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)Key.ARROW_DOWN, IntPtr.Zero);
-            SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)Key.ARROW_DOWN, IntPtr.Zero);
         }
+
+        //public void PlayNotes(params (Key, int)[] data)
+        //{
+        //    //var notes = data.ToList().OrderBy(x => x.Item2).ToArray();
+
+        //    var notes1 = data.ToList().Where(x => x.Item2 == -1).ToArray();
+        //    var notes2 = data.ToList().Where(x => x.Item2 == 0).ToArray();
+        //    var notes3 = data.ToList().Where(x => x.Item2 == 1).ToArray();
+
+
+        //    // -1
+
+        //    SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)Key.ARROW_DOWN, IntPtr.Zero);
+        //    SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)Key.ARROW_DOWN, IntPtr.Zero);
+
+        //    foreach (var n in notes1)
+        //    {
+        //        SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)n.Item1, IntPtr.Zero);
+        //    }
+
+        //    Thread.Sleep(1);
+
+        //    foreach (var n in notes1)
+        //    {
+        //        SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)n.Item1, IntPtr.Zero);
+        //    }
+
+        //    SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)Key.ARROW_UP, IntPtr.Zero);
+        //    SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)Key.ARROW_UP, IntPtr.Zero);
+
+        //    Thread.Sleep(1);
+
+
+        //    // 0
+
+        //    foreach (var n in notes2)
+        //    {
+        //        SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)n.Item1, IntPtr.Zero);
+        //    }
+
+        //    Thread.Sleep(1);
+
+        //    foreach (var n in notes2)
+        //    {
+        //        SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)n.Item1, IntPtr.Zero);
+        //    }
+
+        //    Thread.Sleep(1);
+
+
+        //    // 1
+
+        //    SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)Key.ARROW_UP, IntPtr.Zero);
+        //    SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)Key.ARROW_UP, IntPtr.Zero);
+
+        //    foreach (var n in notes3)
+        //    {
+        //        SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)n.Item1, IntPtr.Zero);
+        //    }
+
+        //    Thread.Sleep(1);
+
+        //    foreach (var n in notes3)
+        //    {
+        //        SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)n.Item1, IntPtr.Zero);
+        //    }
+
+        //    SendMessage(_pianoProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)Key.ARROW_DOWN, IntPtr.Zero);
+        //    SendMessage(_pianoProcess.MainWindowHandle, WM_KEYUP, (IntPtr)Key.ARROW_DOWN, IntPtr.Zero);
+        //}
 
         public void FreeAllKeys()
         {
@@ -135,7 +187,6 @@ namespace PianoPlayer
 
         public void Focus()
         {
-            Thread.Sleep(100);
             SetForegroundWindow(_pianoProcess.MainWindowHandle);
         }
     }
