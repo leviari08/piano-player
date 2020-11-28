@@ -35,9 +35,22 @@ namespace PianoPlayer
 
         private void butPlay_Click(object sender, EventArgs e)
         {
+            if (_piano == null || !_piano.isConnected)
+            {
+                MessageBox.Show("Piano is not connected");
+                return;
+            }
+
+            if (cmboxSongs.SelectedItem == null)
+            {
+                MessageBox.Show("No song was selected");
+                return;
+            }
+
             string songName = cmboxSongs.SelectedItem.ToString();
-            MessageBox.Show(songName);
             _currentSong = _musicLibrary.songs.First(x => x.name == songName);
+
+            lblTransposition.Text = "0";
 
             Thread.Sleep(1000);
             _piano.Focus();
@@ -54,9 +67,10 @@ namespace PianoPlayer
                     musicTracks = musicTracks.Concat(cTrack.chordList).ToList();
                 }
 
+                //for (int i = 0; ; i++)
                 for (int i = 0; i < musicTracks.Max(m => m.noteList.Length); i++)
                 {
-                    if (abortThread)
+                        if (abortThread)
                         return;
 
                     (Key, int)[] notesToPlay = new (Key, int)[musicTracks.Count];
@@ -71,6 +85,7 @@ namespace PianoPlayer
                     Thread.Sleep(_currentSong.delay);
                 }
 
+                Thread.Sleep(100);
                 _piano.FreeAllKeys();
             });
 
